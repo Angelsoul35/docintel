@@ -11,6 +11,13 @@ retrieved context — it never invents facts. With no API key, a deterministic *
 extractive fallback** keeps the service fully working, and a **grounding floor** stops the
 service from answering when retrieval found nothing relevant.
 
+[![CI](https://img.shields.io/badge/CI-GitHub%20Actions-blue)](.github/workflows/ci.yml)
+[![Java](https://img.shields.io/badge/java-21-blue)](pom.xml)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.3-brightgreen)](pom.xml)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
+---
+
 ## Why
 
 Most RAG demos collapse the moment the LLM key is missing, the provider is down, or the
