@@ -194,4 +194,4 @@ mvn spring-boot:run # start the service on :8080
 
 ## License
 
-[MIT](LICENSE) © 2026 Angelo David Padilla Romero
+[MIT](LICENSE) © Angelo David Padilla Romero
