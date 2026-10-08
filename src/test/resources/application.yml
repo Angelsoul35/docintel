@@ -1,0 +1,10 @@
+# Test configuration: no live LLM providers are activated, so the suite runs fully
+# offline with no network and no API key. The cascade therefore contains only the
+# deterministic offline extractive answerer.
+docintel:
+  retrieval:
+    top-k: 3
+    similarity-floor: 0.05
+  llm:
+    providers: []
+    timeout-ms: 1000
