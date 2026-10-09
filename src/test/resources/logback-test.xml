@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Test logging. The real-inputs benchmark answers 1200 questions twice, so the
+  per-answer INFO lines from AnswerService would bury its printed report. Keep the
+  application loggers at WARN during tests; the benchmark writes its table to stdout.
+-->
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+    <root level="WARN">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    <logger name="com.angelo.docintel" level="WARN"/>
+</configuration>

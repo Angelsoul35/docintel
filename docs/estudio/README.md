@@ -18,6 +18,9 @@ es el acompañamiento en español.
    qué siempre devolvemos citas.
 5. [Pruebas y ejecución](05-pruebas-y-ejecucion.md) — cómo se prueba todo sin red ni clave,
    y cómo se ejecuta el servicio.
+6. [Benchmark con entradas reales](06-benchmark-inputs-reales.md) — la medición de extremo a
+   extremo sobre SQuAD v1.1: métricas con fórmulas, ejemplo numérico real, baseline, control
+   negativo y veredicto.
 
 ## Idea central
 

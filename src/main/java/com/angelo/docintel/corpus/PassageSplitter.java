@@ -9,8 +9,9 @@ import java.util.regex.Pattern;
  * Splits a document into sentence-level passages. Very short fragments are merged
  * forward so that every passage carries enough signal to be retrieved on its own.
  *
- * <p>This is intentionally simple: production systems would use a configurable
- * chunking strategy (overlapping windows, token budgets). See the README scope note.
+ * <p>Chunking is at sentence granularity with a minimum length. The same {@link Passage}
+ * model supports richer strategies — overlapping windows, token budgets, structure-aware
+ * splitting — behind this boundary; see the "Extending the engine" section of the README.
  */
 public final class PassageSplitter {
 

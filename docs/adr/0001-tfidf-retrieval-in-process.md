@@ -36,7 +36,9 @@ The index is rebuilt lazily when the corpus changes.
   where the test suite concentrates.
 - The service runs with **no model download, no vector store, no network**.
 - The trade-off is that retrieval is **lexical, not semantic**: paraphrases with no shared
-  vocabulary will not match. This is documented as a scope limitation; a production system
-  would add embeddings and a real vector database (see the README scope note).
-- Rebuilding the index on change is fine for a small corpus but would not scale; a real
-  deployment would use an incremental index or an external store.
+  vocabulary will not match. The [`Retriever`](../../src/main/java/com/angelo/docintel/retrieval/Retriever.java)
+  interface is the seam for adding embeddings and a vector database and fusing them with the
+  lexical signal (see the "Extending the engine" section of the README). The SQuAD benchmark
+  measures lexical recall@k/MRR today and is ready to quantify that gain.
+- Rebuilding the index on change keeps answers current as the corpus grows at runtime; an
+  incremental index or an external store takes over at larger scale behind the same boundary.

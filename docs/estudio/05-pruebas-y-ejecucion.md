@@ -30,13 +30,22 @@ Qué cubre cada prueba:
   corpus escala; falta de `question` da 400; se listan y se añaden documentos.
 - **`DocIntelApplicationTests`** — el contexto arranca y, sin clave, la cascada es solo
   `[offline]`.
+- **`SquadDatasetTest` / `SquadMetricsTest` / `RetrievalMetricsTest`** — el cargador lee el
+  snapshot real de SQuAD con la forma esperada (152 documentos, 1 200 preguntas, cada pregunta
+  apunta a un documento existente) y las métricas (recall@k, MRR, exact-match, token-F1,
+  containment) dan los valores calculados a mano sobre entradas minúsculas.
+- **`SquadBenchmarkTest`** — el benchmark de entradas reales (capítulo 6): mete SQuAD v1.1 por
+  el pipeline de docintel y afirma que el motor supera al baseline por mucho, que reproduce los
+  valores de referencia verificados de forma independiente y que el control negativo colapsa.
 
 ## Ejecutar las pruebas
 
 ```bash
-mvn test        # 27 pruebas, offline, sin clave
+mvn test        # 39 pruebas, offline, sin clave (incluye el benchmark de SQuAD)
 mvn -o test     # fuerza el modo offline de Maven (solo caché local), para demostrarlo
 ```
+
+El benchmark imprime su tabla de métricas por la salida estándar durante `mvn test`.
 
 ## Ejecutar el servicio
 

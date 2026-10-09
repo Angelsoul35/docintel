@@ -44,7 +44,8 @@ un LLM o del extractor. La confianza devuelta es la similitud del mejor pasaje. 
 servicio escala, la lista de citas va vacía, lo que marca sin ambigüedad "sin respuesta
 fundamentada".
 
-Matiz honesto: las citas muestran **la evidencia que había**, no demuestran que el texto
-redactado por un LLM refleje fielmente los pasajes. Verificar esa fidelidad es otro problema
-(un futuro arnés de evaluación). En el camino extractivo sí hay garantía: el texto es un
-fragmento literal de un pasaje citado.
+Matiz importante: las citas muestran **la evidencia que se recuperó**, no demuestran por sí
+solas que el texto redactado por un LLM refleje fielmente los pasajes. Medir esa fidelidad es
+un paso aparte; el benchmark sobre SQuAD (capítulo 06) ya cuantifica cuánto de la respuesta
+sale realmente del pasaje recuperado. En el camino extractivo la garantía es estructural: el
+texto es un fragmento literal de un pasaje citado.

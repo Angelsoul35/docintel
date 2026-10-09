@@ -1,15 +1,17 @@
 # docintel
 
-A small, **provider-agnostic RAG / document-QA microservice** built with Spring Boot 3
+A **provider-agnostic RAG / document-QA microservice** built with Spring Boot 3
 and Java 21. It answers questions grounded in a document corpus, returns the passages it
-used as **citations**, and **degrades gracefully with no LLM and no network**.
+used as **citations**, and **keeps working with no LLM and no network**.
 
-The design is deliberately honest about where the intelligence lives: **retrieval is the
-deterministic core**, implemented as TF-IDF + cosine similarity in plain Java and covered
-by unit tests. A language model, when configured, only *phrases* the answer from the
-retrieved context — it never invents facts. With no API key, a deterministic **offline
-extractive fallback** keeps the service fully working, and a **grounding floor** stops the
-service from answering when retrieval found nothing relevant.
+The engine puts the part that must be correct where it can be measured: **retrieval is the
+deterministic core**, implemented as TF-IDF + cosine similarity in plain Java, unit-tested,
+and benchmarked against a real public gold set (see
+[Measured on real inputs](#measured-on-real-inputs-squad-v11)). A language model, when
+configured, only *phrases* the answer from the retrieved context — it never invents facts.
+With no API key, a deterministic **offline extractive fallback** keeps the service fully
+working, and a **grounding floor** stops the service from answering when retrieval found
+nothing relevant.
 
 [![CI](https://img.shields.io/badge/CI-GitHub%20Actions-blue)](.github/workflows/ci.yml)
 [![Java](https://img.shields.io/badge/java-21-blue)](pom.xml)
@@ -57,8 +59,8 @@ Requires JDK 21. From the project root:
 mvn spring-boot:run
 ```
 
-The service starts on `http://localhost:8080` with a small seeded corpus (product-support
-knowledge base). **No API key is required** — it answers extractively out of the box.
+The service starts on `http://localhost:8080` with a seeded product-support corpus.
+**No API key is required** — it answers extractively out of the box.
 
 ### Ask a question (offline, grounded extractive answer with citations)
 
@@ -162,24 +164,70 @@ Added documents are split into passages and are immediately retrievable.
 - **Citations are always returned** for a grounded answer, so every claim can be checked
   against the corpus.
 
-## Scope and honest limitations
+## Measured on real inputs (SQuAD v1.1)
 
-This is a focused portfolio service, not a production RAG platform. In particular:
+Retrieval quality is not asserted on hand-picked examples — it is measured end-to-end on a
+real, public question-answering-over-documents gold set. The benchmark
+([`SquadBenchmarkTest`](src/test/java/com/angelo/docintel/eval/SquadBenchmarkTest.java))
+ingests a vendored slice of **SQuAD v1.1** (the first 1 200 validation questions over 152
+Wikipedia paragraphs from four articles; source, license and regeneration in
+[`src/test/resources/squad/README.md`](src/test/resources/squad/README.md)) through
+DocIntel's own pipeline and scores it against SQuAD's gold labels. It runs as part of
+`mvn test`.
 
-- **Retrieval is lexical (TF-IDF), not semantic.** It matches words, not meaning, so
-  paraphrases that share no vocabulary with the corpus will miss. Production would use
-  **embeddings + a real vector database** (pgvector, Qdrant, Elasticsearch, …) alongside or
-  instead of the lexical signal.
-- **Chunking is naive** (sentence-level with a minimum length). A real system needs a
-  deliberate **chunking strategy**: overlapping windows, token budgets, and
-  structure-aware splitting.
-- **The corpus is in-memory** and reseeded on restart; there is no persistence, no
-  multi-tenancy, no auth.
-- **There is no evaluation harness.** A production system needs an **eval set** with
-  retrieval metrics (recall@k, MRR) and answer-quality / faithfulness checks to catch
-  regressions.
-- The HTTP provider adapters are intentionally minimal (no streaming, no retry/backoff,
-  no token accounting).
+**Retrieval** — did the engine retrieve the paragraph the answer was written against?
+Chance over 152 documents is ~0.7 %.
+
+| Metric | DocIntel engine | First-K baseline | Scrambled (negative control) |
+|---|--:|--:|--:|
+| recall@1 | **0.651** | 0.025 | 0.008 |
+| recall@3 | **0.822** | 0.025 | 0.033 |
+| recall@5 | **0.869** | 0.046 | 0.058 |
+| MRR@10 | **0.747** | 0.032 | 0.028 |
+
+**Answer** — did the surfaced text carry the gold answer? Engine retrieval vs the same
+answerer run on a retrieval-ablated (first-passage) pipeline:
+
+| Metric | Engine retrieval | Retrieval ablated |
+|---|--:|--:|
+| answer-containment | **0.608** | 0.021 |
+| token-F1 | **0.110** | 0.014 |
+| exact-match | 0.000 | 0.000 |
+
+**What this shows.** TF-IDF retrieval finds the gold source paragraph as its top result for
+**65 %** of 1 200 questions (26× a query-independent baseline) and within the top 3 for
+**82 %**, and the grounded answer carries the gold span **29×** more often than when
+retrieval is ablated. The **negative control** — scrambling the question↔document pairing —
+collapses recall@1 from 0.651 to 0.008, right down to the chance baseline, which proves the
+scores come from genuine query/document grounding and not from a corpus artefact. Every
+number above is pinned in the test and cross-checked by an independent second implementation
+(walked through in [`docs/estudio/06-benchmark-inputs-reales.md`](docs/estudio/06-benchmark-inputs-reales.md)).
+
+Exact-match is 0 by design: the offline fallback returns a whole grounding *sentence*, never
+a minimal span, so it scores low on *span-exact* metrics while scoring high on
+*answer-containment* — the metric that matches a sentence-extractive answerer. Raising
+exact-match is the span-extraction extension below.
+
+## Extending the engine
+
+Each stage is a seam built to be swapped or strengthened:
+
+- **Semantic retrieval.** Retrieval is lexical TF-IDF, so it matches words rather than
+  meaning. The [`Retriever`](src/main/java/com/angelo/docintel/retrieval/Retriever.java)
+  interface lets you add an embeddings + vector-database retriever (pgvector, Qdrant,
+  Elasticsearch) and fuse it with the lexical signal (hybrid / reciprocal-rank fusion); the
+  SQuAD benchmark is ready to measure the gain.
+- **Structure-aware chunking.** [`PassageSplitter`](src/main/java/com/angelo/docintel/corpus/PassageSplitter.java)
+  chunks at sentence granularity with a minimum length; overlapping windows, token budgets
+  and heading-aware splitting plug in behind the same `Passage` model.
+- **Span extraction.** Adding answer-span localisation on top of the retrieved sentence
+  turns the extractive fallback into a span answerer and lifts exact-match / token-F1.
+- **Persistence and scale.** The corpus is in-memory via
+  [`DocumentStore`](src/main/java/com/angelo/docintel/corpus/DocumentStore.java), rebuilt on
+  restart; a persistent store and vector index drop in behind the same component boundary.
+- **Richer provider adapters.** The HTTP adapters cover the grounded request/response path;
+  streaming, retry/backoff and token accounting are natural additions behind
+  [`LlmClient`](src/main/java/com/angelo/docintel/llm/LlmClient.java).
 
 See [`docs/architecture.md`](docs/architecture.md) and the ADRs under
 [`docs/adr`](docs/adr) for the reasoning behind each decision, and

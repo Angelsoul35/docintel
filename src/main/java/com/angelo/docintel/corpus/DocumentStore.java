@@ -14,8 +14,9 @@ import org.springframework.stereotype.Component;
  * passage list that the retriever indexes. A monotonically increasing {@link #version()}
  * lets the retriever know when it must rebuild its index.
  *
- * <p>This is deliberately a toy store. Production would use a real document store
- * plus a vector database (see the README scope note).
+ * <p>The corpus is held in memory and rebuilt on restart; a persistent document store
+ * and a vector index drop in behind this same component boundary (see the "Extending
+ * the engine" section of the README).
  */
 @Component
 public class DocumentStore {
@@ -68,7 +69,7 @@ public class DocumentStore {
     }
 
     /**
-     * The seed corpus: a small product-support knowledge base. Kept in its own type so
+     * The seed corpus: a product-support knowledge base. Kept in its own type so
      * it is easy to see what the service ships with out of the box.
      */
     static final class SeedCorpus {
